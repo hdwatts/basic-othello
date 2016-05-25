@@ -1,0 +1,92 @@
+<style>
+  #loading {
+    position:fixed;
+    top: 0;
+    left: 0;
+    width:100%;
+    height:100%;
+    background-color: rgba(255,255,0,0.5)
+  }
+  #loading h1 {
+    text-align: center;
+    font-size: 72px;
+    padding-top:25%;
+  }
+</style>
+
+<script>
+  var size = 25
+  $(function() {
+    addAjax();
+    $("#myCanvas").trigger("click");
+    $("#loading").hide();
+  });
+
+  function getCursorPosition(canvas, event) {
+    var rect = canvas.getBoundingClientRect();
+    var x = (event.clientX - rect.left) / size;
+    var y = (event.clientY - rect.top) / size;
+    x = Math.floor(x)
+    y = Math.floor(y)
+    return [x, y]
+  }
+
+  function addAjax() {
+    $("#myCanvas").on("click", function(e){
+      //alert($(this).data('x') + " " + $(this).data('y'))
+      
+      var arr = getCursorPosition(this, e);
+      var x = arr[0];
+      var y = arr[1];
+      console.log(x + " - " + y)
+      $("#loading").show();
+      $.ajax({
+        method: "POST",
+        url: "/move",
+        data: { x: x, y: y }
+      })
+      .done(function( data ) {
+        //$("#game").empty()
+        //$("#game").append(data)
+        var c = $("#myCanvas")[0]
+        var ctx = c.getContext("2d");
+
+        for(var y = 0; y < data.board.length; y++ ) {
+          for(var x = 0; x < data.board[0].length; x++ ){
+            ctx.fillStyle = "#00FF00";
+            ctx.fillRect(size * y,size * x, size, size);
+            ctx.fillStyle = "#000000"
+            ctx.strokeRect(size * y,size * x, size, size);
+            if ( data.board[y][x] == 1){
+              ctx.fillStyle = "#000000";
+              ctx.beginPath();
+              ctx.arc(size * (y+1) - 12,size * (x+1) - 12,12,0,2*Math.PI);
+              ctx.fill();
+            }else if ( data.board[y][x] == 2) {
+              ctx.fillStyle = "#FFFFFF";
+              ctx.beginPath();
+              ctx.arc(size * (y+1) - 12,size * (x+1) - 12,12,0,2*Math.PI);
+              ctx.fill();
+            }
+          }
+        }
+        $("#loading").hide();
+        var turn = "Black"
+        if (data.turn == 2) {
+          turn = "White"
+        }
+          
+        $("h2").text("Black: " + data.score_p1 +" -- White: " + data.score_p2 + " -- Current Turn: " + turn)
+      });
+    });
+  }
+</script>
+
+<div id="loading">
+  <h1>Loading</h1>
+</div>
+<div id="game">
+   <canvas id="myCanvas" width="<%= @game.game_board.size * 25 %>" height="<%= @game.game_board[0].size * 25 %>" style="border:1px solid #000000;"></canvas>
+</div>
+<h2>Black: <%= @game.score_p1 %>  --  White: <%= @game.score_p2 %> -- Current Turn: <%= @game.print_turn %></h2>
+<%#= render "game" %>
